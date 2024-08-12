@@ -1,5 +1,12 @@
 # SuperSimpleM5StampFly
 
+M5Stack社が発売した StampFly と AtomJoyStick のファームウェアをゼロから書いてみよう！！という無謀な試み。飛んだら成功！飽きたら終了！
+
+## ToDo
+
+-[ ] アホほどある
+
+
 ## 参考資料
 
 - StampFly & Atom ジョイスティック ファームウェア書き込みガイド https://docs.m5stack.com/ja/guide/hobby_kit/stampfly/stamply_firmware
