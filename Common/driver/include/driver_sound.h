@@ -1,4 +1,9 @@
 #pragma once
+// サウンドドライバ
+
+#define PWM_CH   4            // PWMチャンネル (0-3 は使用中)
+#define PWM_FREQ 4000         // 4kHz
+#define PWM_RESO 8            // 8bit
 
 // サウンドパラメータ
 typedef struct {
@@ -15,7 +20,9 @@ static void _Sound_Task(void* param) {
     // 番兵は-1
     while (paramsArray->freq >= 0) {
         // 音を出す
-        tone(PIN_BEEP, paramsArray->freq, paramsArray->duration);
+        // PWMで音を出す
+        ledcWriteTone(PWM_CH, paramsArray->freq);
+        ledcWrite(PWM_CH, 127);
 
         // 指定時間待つ
         vTaskDelay(paramsArray->duration / portTICK_PERIOD_MS);
@@ -23,7 +30,7 @@ static void _Sound_Task(void* param) {
         paramsArray++;
     }
     // 音を停止する
-    tone(PIN_BEEP, 0, 0);
+    ledcWriteTone(PWM_CH, 0);
 
     // タスク終了後、タスクハンドルをリセット
     _soundTaskHandle = NULL;
@@ -42,7 +49,10 @@ static void _create_sound_task(SoundParams_t* paramsArray) {
 }
 
 // サウンドの初期化
-void Sound_init() {}
+void Sound_init() {
+    ledcSetup(PWM_CH, PWM_FREQ, PWM_RESO);
+    ledcAttachPin(PIN_BEEP, PWM_CH);
+}
 
 // サウンドの更新
 void Sound_update() {}
