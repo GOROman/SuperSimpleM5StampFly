@@ -15,6 +15,10 @@
 // Atom JoyStickのブザー(G5)
 #define PIN_BUZZER 5
 
+// AtomS3本体のボタン(G41)
+// AtomS3のボタンは画面自体がボタンになっている
+#define PIN_BUTTON 41
+
 // フルカラーLEDの設定
 CRGB leds_joystick[NUM_LEDS_JOYSTICK];
 
@@ -37,32 +41,26 @@ void setup() {
 
     // ブザー用のピンを出力に設定する
     pinMode(PIN_BUZZER, OUTPUT);
+
+    // ボタン用のピンを入力に設定する
+    pinMode(PIN_BUTTON, INPUT);
 }
 
-int y = 0;
-
 void loop() {
-    // 画面を青色で塗りつぶす
-    gfx.fillScreen(TFT_NAVY);
+    // ボタンの状態を取得する(押されている場合はLOW)
+    bool button = digitalRead(PIN_BUTTON);
 
-    // 画面に文字を表示する
-    gfx.setTextColor(TFT_WHITE);
-    gfx.setCursor(0, y);
-    gfx.println("Hello, Atom JoyStick!");
-
-    // 文字を表示する位置を変更する
-    y++;
-    if (y > gfx.height()) {
-        y = 0;
+    if (button == LOW) {
+        // 画面(ボタン)を押している間は白色にする
+        gfx.fillScreen(TFT_WHITE);
+        leds_joystick[0] = CRGB::White;
+        leds_joystick[1] = CRGB::White;
+        FastLED.show();
+    } else {
+        gfx.fillScreen(TFT_NAVY);
+        leds_joystick[0] = CRGB::Black;
+        leds_joystick[1] = CRGB::Black;
+        FastLED.show();
     }
-
-    leds_joystick[0] = CRGB::Blue;
-    leds_joystick[1] = CRGB::Black;
-    FastLED.show();
-    delay(30);
-
-    leds_joystick[0] = CRGB::Black;
-    leds_joystick[1] = CRGB::Blue;
-    FastLED.show();
-    delay(30);
+    delay(10);
 }
