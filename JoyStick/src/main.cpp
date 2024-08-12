@@ -3,6 +3,9 @@
 // フルカラーLEDを使うためのライブラリ
 #include <FastLED.h>
 
+// M5Stack用のグラフィックスライブラリ(https://github.com/m5stack/M5GFX)
+#include <M5GFX.h>
+
 // Atom JoyStickのLED(G6)
 #define PIN_LED_JOYSTICK 6
 
@@ -15,9 +18,15 @@
 // フルカラーLEDの設定
 CRGB leds_joystick[NUM_LEDS_JOYSTICK];
 
+// M5Stack用のグラフィックスライブラリ
+M5GFX gfx;
+
 void setup() {
     // S3 は Serial ではなく USBSerial を使う必要がある（罠）
     USBSerial.begin(115200);
+
+    // グラフィックスの初期化
+    gfx.begin();
 
     // フルカラーLEDの初期化
     FastLED.addLeds<WS2812B, PIN_LED_JOYSTICK, GRB>(leds_joystick,
@@ -30,32 +39,30 @@ void setup() {
     pinMode(PIN_BUZZER, OUTPUT);
 }
 
-void loop() {
-    USBSerial.println("Hello, Atom JoyStick!");
+int y = 0;
 
-    // フルカラーLEDの左を青色にする
+void loop() {
+    // 画面を青色で塗りつぶす
+    gfx.fillScreen(TFT_NAVY);
+
+    // 画面に文字を表示する
+    gfx.setTextColor(TFT_WHITE);
+    gfx.setCursor(0, y);
+    gfx.println("Hello, Atom JoyStick!");
+
+    // 文字を表示する位置を変更する
+    y++;
+    if (y > gfx.height()) {
+        y = 0;
+    }
+
     leds_joystick[0] = CRGB::Blue;
     leds_joystick[1] = CRGB::Black;
-
-    // フルカラーLEDを更新する
     FastLED.show();
+    delay(30);
 
-    // ブザーを鳴らす(440Hz 200ms)
-    tone(PIN_BUZZER, 440, 200);  // 440Hzはラの音
-
-    // 1000ms待つ (1秒)
-    delay(500);
-
-    // フルカラーLEDの右を青色にする
     leds_joystick[0] = CRGB::Black;
     leds_joystick[1] = CRGB::Blue;
-
-    // フルカラーLEDを更新する
     FastLED.show();
-
-    // ブザーを鳴らす(880Hz 200ms)
-    tone(PIN_BUZZER, 880, 200);  // 880Hzはオクターブが高いラの音
-
-    // 1000ms待つ (1秒)
-    delay(500);
+    delay(30);
 }
