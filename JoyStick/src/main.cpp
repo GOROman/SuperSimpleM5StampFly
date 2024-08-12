@@ -1,6 +1,5 @@
-// はじめの十三歩
-// サウンドドライバーを作成。ハードウェア依存のレジスタなどは
-// hardware_config.h に記述。
+// はじめの十四歩
+// ドライバーをStampFlyとJoyStickで共通化(Common/Driver)
 
 #include <Arduino.h>
 #include <M5GFX.h>
@@ -8,6 +7,7 @@
 M5GFX    gfx;
 M5Canvas canvas(&gfx);  // キャンバス
 
+// ../Common/Driver/include/...
 #include "driver_i2c.h"    // I2Cドライバ
 #include "driver_joy.h"    // JoyStickドライバ
 #include "driver_led.h"    // LEDドライバ

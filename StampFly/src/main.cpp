@@ -1,73 +1,43 @@
+// はじめの十四歩
+// ドライバーを共有化
+
 #include <Arduino.h>
 
-// フルカラーLEDを使うためのライブラリ
-#include <FastLED.h>
-
-// M5StampS3のLED(G21)
-#define PIN_LED_STAMPS3 21
-// M5StampFlyのLED(G39)
-#define PIN_LED_STAMPFLY 39
-
-// M5StampS3のLEDの数
-#define NUM_LEDS_STAMPS3 1
-// M5StampFlyのLEDの数
-#define NUM_LEDS_STAMPFLY 2
-
-// M5StampFlyのブザーのピン(G40)
-#define PIN_BUZZER 40
-
-// フルカラーLEDの設定
-CRGB leds_stamps3[NUM_LEDS_STAMPS3];
-CRGB leds_stampfly[NUM_LEDS_STAMPFLY];
+// ../Common/Driver/include/...
+#include "driver_i2c.h"    // I2Cドライバ
+#include "driver_led.h"    // LEDドライバ
+#include "driver_sound.h"  // サウンドドライバ
+#include "driver_timer.h"  // Timerドライバ
 
 void setup() {
-    // S3 は Serial ではなく USBSerial を使う必要がある（罠）
     USBSerial.begin(115200);
 
-    // フルカラーLEDの初期化
-    FastLED.addLeds<WS2812B, PIN_LED_STAMPS3, GRB>(leds_stamps3,
-                                                   NUM_LEDS_STAMPS3);
-    FastLED.addLeds<WS2812B, PIN_LED_STAMPFLY, GRB>(leds_stampfly,
-                                                    NUM_LEDS_STAMPFLY);
-    // ブザー用のピンを出力に設定する
-    pinMode(PIN_BUZZER, OUTPUT);
+    // 各ドライバーの初期化
+    LED_init();         // フルカラーLEDの初期化
+    I2C_init();         // I2Cの初期化
+    Sound_init();       // サウンドの初期化
+    Timer_init(10000);  // タイマーの初期化(10000us = 10ms)
 
-    // ブザーを鳴らす(200ms)
-    tone(PIN_BUZZER, 262, 200);  // ドの音
-    tone(PIN_BUZZER, 294, 200);  // レの音
-    tone(PIN_BUZZER, 330, 200);  // ミの音
-
-    delay(1000);
+    Sound_play(0);
 }
 
+int frame = 0;
+
 void loop() {
-    USBSerial.println("Hello, StampFly!");
+    Timer_sync();  // フレーム同期
 
-    // 本体のLEDを点灯する
-    leds_stamps3[0] = CRGB::White;
-    leds_stampfly[0] = CRGB::Black;
-    leds_stampfly[1] = CRGB::Black;
+    // I2C通信の更新
+    I2C_update();
 
-    // フルカラーLEDを更新する
-    FastLED.show();
+    if (frame % 100 < 50) {
+        LED_setColor(0, 255, 255, 255);
+    } else {
+        LED_setColor(0, 0, 0, 0);
+    }
 
-    // ブザーを鳴らす(200ms)
-    tone(PIN_BUZZER, 440, 100);
+    ++frame;
 
-    // 1000ms待つ (1秒)
-    delay(500);
-
-    // フルカラーLEDを青色にする
-    leds_stamps3[0] = CRGB::Black;
-    leds_stampfly[0] = CRGB::Red;
-    leds_stampfly[1] = CRGB::Blue;
-
-    // フルカラーLEDを更新する
-    FastLED.show();
-
-    // ブザーを鳴らす(200ms)
-    tone(PIN_BUZZER, 880, 100);
-
-    // 1000ms待つ (1秒)
-    delay(500);
+    LED_update();    // フルカラーLEDの更新
+    Timer_update();  // タイマーの更新
+    Sound_update();  // サウンドの更新
 }
