@@ -9,6 +9,9 @@
 // Atom JoyStickのLEDの数
 #define NUM_LEDS_JOYSTICK 2
 
+// Atom JoyStickのブザー(G5)
+#define PIN_BUZZER 5
+
 // フルカラーLEDの設定
 CRGB leds_joystick[NUM_LEDS_JOYSTICK];
 
@@ -22,6 +25,9 @@ void setup() {
 
     // フルカラーLEDの明るさを設定する
     FastLED.setBrightness(32);
+
+    // ブザー用のピンを出力に設定する
+    pinMode(PIN_BUZZER, OUTPUT);
 }
 
 void loop() {
@@ -34,6 +40,9 @@ void loop() {
     // フルカラーLEDを更新する
     FastLED.show();
 
+    // ブザーを鳴らす(440Hz 200ms)
+    tone(PIN_BUZZER, 440, 200);  // 440Hzはラの音
+
     // 1000ms待つ (1秒)
     delay(500);
 
@@ -43,6 +52,9 @@ void loop() {
 
     // フルカラーLEDを更新する
     FastLED.show();
+
+    // ブザーを鳴らす(880Hz 200ms)
+    tone(PIN_BUZZER, 880, 200);  // 880Hzはオクターブが高いラの音
 
     // 1000ms待つ (1秒)
     delay(500);
