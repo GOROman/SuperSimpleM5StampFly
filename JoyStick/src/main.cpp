@@ -1,29 +1,22 @@
-// はじめの十歩
-// I2CとLEDの制御をドライバーとして別ファイルにしてみる
+// はじめの十一歩
+// JoyStickドライバを作成。ジョイスティックの状態を取得
 
 #include <Arduino.h>
-
-// M5Stack用のグラフィックスライブラリ(https://github.com/m5stack/M5GFX)
 #include <M5GFX.h>
 
-// M5Stack用のグラフィックスライブラリ
 M5GFX gfx;
 
-// I2Cドライバ(別ファイルに分離)
-#include "driver_i2c.h"
-
-// LEDドライバ(別ファイルに分離)
-#include "driver_led.h"
+#include "driver_i2c.h"  // I2Cドライバ
+#include "driver_joy.h"  // JoyStickドライバ
+#include "driver_led.h"  // LEDドライバ
 
 void setup() {
-    // S3 は Serial ではなく USBSerial を使う必要がある（罠）
     USBSerial.begin(115200);
 
-    // フルカラーLEDの初期化
-    LED_init();
-
-    // I2Cの初期化
-    I2C_init();
+    // 各ドライバーの初期化
+    LED_init();  // フルカラーLEDの初期化
+    I2C_init();  // I2Cの初期化
+    Joy_init();  // JoyStickの初期化
 
     // グラフィックスの初期化
     gfx.begin();
@@ -32,31 +25,41 @@ void setup() {
 void loop() {
     gfx.clear();
 
-    uint8_t data[4] = {0};
+    // I2C通信の更新
+    I2C_update();
 
-    // I2CでAtom JoyStickのボタン状態を取得する
-    I2C_read(I2C_ADDR_ATOM_JOYSTICK, I2C_BUTTON_REG, data, sizeof(data));
+    // JoyStickの状態を更新する(I2C受信)
+    Joy_update();
 
     // 左上のボタンが押された場合は左上LEDを点灯する
-    if (data[0] == LOW) {
-        // 押されている
+    if (Joy_isPressed(BUTTON_TRIG_L)) {
         LED_setColor(0, 255, 255, 255);
     } else {
-        // 押されていない
         LED_setColor(0, 0, 0, 0);
     }
 
     // 右上のボタンが押された場合は右上LEDを点灯する
-    if (data[1] == LOW) {
+    if (Joy_isPressed(BUTTON_TRIG_R)) {
         LED_setColor(1, 255, 255, 255);
     } else {
         LED_setColor(1, 0, 0, 0);
     }
 
+    gfx.setCursor(0, 0);
+    gfx.printf("Button: %d %d %d %d", Joy_isPressed(BUTTON_TRIG_L),
+               Joy_isPressed(BUTTON_TRIG_R), Joy_isPressed(BUTTON_STICK_L),
+               Joy_isPressed(BUTTON_STICK_R));
+
+    // JoyStickの状態(X,Y)を表示する
+    gfx.setCursor(0, 30);
+    uint16_t x, y;
+    Joy_getAxis(STICK_L, &x, &y);  // 12bit: 0-4095
+    gfx.printf("Joy1: %4d %4d\n", x, y);
+    Joy_getAxis(STICK_R, &x, &y);
+    gfx.printf("Joy2: %4d %4d\n", x, y);
+
     // フルカラーLEDの状態を更新する
     LED_update();
-    gfx.setCursor(0, 0);
-    gfx.printf("Button: %d %d %d %d", data[0], data[1], data[2], data[3]);
 
     delay(10);
 }
