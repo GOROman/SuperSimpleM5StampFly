@@ -1,29 +1,38 @@
-// はじめの十一歩
-// JoyStickドライバを作成。ジョイスティックの状態を取得
+// はじめの十二歩
+// ジョイスティックの位置を画面に表示する。描画のちらつきを防ぐためにM5Canvasを使って描画する。同期のため、タイマードライバを作成。
+// 指定時間同期する。
 
 #include <Arduino.h>
 #include <M5GFX.h>
 
-M5GFX gfx;
+M5GFX    gfx;
+M5Canvas canvas(&gfx);  // キャンバス
 
-#include "driver_i2c.h"  // I2Cドライバ
-#include "driver_joy.h"  // JoyStickドライバ
-#include "driver_led.h"  // LEDドライバ
+#include "driver_i2c.h"    // I2Cドライバ
+#include "driver_joy.h"    // JoyStickドライバ
+#include "driver_led.h"    // LEDドライバ
+#include "driver_timer.h"  // Timerドライバ
 
 void setup() {
     USBSerial.begin(115200);
 
     // 各ドライバーの初期化
-    LED_init();  // フルカラーLEDの初期化
-    I2C_init();  // I2Cの初期化
-    Joy_init();  // JoyStickの初期化
+    LED_init();         // フルカラーLEDの初期化
+    I2C_init();         // I2Cの初期化
+    Joy_init();         // JoyStickの初期化
+    Timer_init(10000);  // タイマーの初期化(10000us = 10ms)
 
     // グラフィックスの初期化
     gfx.begin();
+
+    // キャンバスの作成
+    canvas.createSprite(gfx.width(), gfx.height());
 }
 
 void loop() {
-    gfx.clear();
+    Timer_sync();  // フレーム同期
+
+    canvas.fillScreen(0);
 
     // I2C通信の更新
     I2C_update();
@@ -45,21 +54,40 @@ void loop() {
         LED_setColor(1, 0, 0, 0);
     }
 
-    gfx.setCursor(0, 0);
-    gfx.printf("Button: %d %d %d %d", Joy_isPressed(BUTTON_TRIG_L),
-               Joy_isPressed(BUTTON_TRIG_R), Joy_isPressed(BUTTON_STICK_L),
-               Joy_isPressed(BUTTON_STICK_R));
+    const int W = gfx.width();
+    const int H = gfx.height();
+
+    canvas.clear();
+    canvas.setCursor(0, 0);
+    canvas.printf("Button: %d %d %d %d", Joy_isPressed(BUTTON_TRIG_L),
+                  Joy_isPressed(BUTTON_TRIG_R), Joy_isPressed(BUTTON_STICK_L),
+                  Joy_isPressed(BUTTON_STICK_R));
+
+    canvas.drawFastHLine(0, H / 2, W, TFT_WHITE);
+    canvas.drawFastVLine(W / 2, 0, H, TFT_WHITE);
 
     // JoyStickの状態(X,Y)を表示する
-    gfx.setCursor(0, 30);
-    uint16_t x, y;
-    Joy_getAxis(STICK_L, &x, &y);  // 12bit: 0-4095
-    gfx.printf("Joy1: %4d %4d\n", x, y);
-    Joy_getAxis(STICK_R, &x, &y);
-    gfx.printf("Joy2: %4d %4d\n", x, y);
+    canvas.setCursor(0, 30);
+    uint16_t x1, y1, x2, y2;
+    Joy_getAxis(STICK_L, &x1, &y1);  // 12bit: 0-4095
+    Joy_getAxis(STICK_R, &x2, &y2);
+
+    // JoyStickの生データを表示する
+    canvas.printf("Joy1: X:%4d Y:%4d\n", x1, y1);
+    canvas.printf("Joy2: X:%4d Y:%4d\n", x2, y2);
+
+    // JoyStickの位置を描画する
+    canvas.fillCircle(map(x1, 0, 4095, 0, W - 1), map(y1, 0, 4095, 0, H - 1), 5,
+                      TFT_RED);
+    canvas.fillCircle(map(x2, 0, 4095, 0, W - 1), map(y2, 0, 4095, 0, H - 1), 5,
+                      TFT_BLUE);
 
     // フルカラーLEDの状態を更新する
     LED_update();
+    Timer_update();  // タイマーの更新
 
-    delay(10);
+    // キャンバスの描画(ちらつき防止)
+    gfx.startWrite();
+    canvas.pushSprite(0, 0);
+    gfx.endWrite();
 }
