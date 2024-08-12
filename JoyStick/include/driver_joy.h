@@ -1,12 +1,6 @@
 #pragma once
 
-// Atom JoyStickのI2Cアドレス
-#define I2C_ADDR_ATOM_JOYSTICK 0x59
-
-// Atom JoyStickのレジスタ
-#define I2C_REG_JOY1_ADC_VALUE_12BITS 0x00
-#define I2C_REG_JOY2_ADC_VALUE_12BITS 0x20
-#define I2C_REG_BUTTON                0x70
+#include "hardware_config.h"
 
 enum {
     STICK_L,

@@ -2,11 +2,7 @@
 
 #include <FastLED.h>
 
-// Atom JoyStickのLED(G6)
-#define PIN_LED 6
-
-// Atom JoyStickのLEDの数
-#define NUM_LEDS 2
+#include "hardware_config.h"
 
 // フルカラーLEDの設定
 CRGB leds[NUM_LEDS];

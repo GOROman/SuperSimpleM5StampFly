@@ -1,6 +1,6 @@
-// はじめの十二歩
-// ジョイスティックの位置を画面に表示する。描画のちらつきを防ぐためにM5Canvasを使って描画する。同期のため、タイマードライバを作成。
-// 指定時間同期する。
+// はじめの十三歩
+// サウンドドライバーを作成。ハードウェア依存のレジスタなどは
+// hardware_config.h に記述。
 
 #include <Arduino.h>
 #include <M5GFX.h>
@@ -11,6 +11,7 @@ M5Canvas canvas(&gfx);  // キャンバス
 #include "driver_i2c.h"    // I2Cドライバ
 #include "driver_joy.h"    // JoyStickドライバ
 #include "driver_led.h"    // LEDドライバ
+#include "driver_sound.h"  // サウンドドライバ
 #include "driver_timer.h"  // Timerドライバ
 
 void setup() {
@@ -20,6 +21,7 @@ void setup() {
     LED_init();         // フルカラーLEDの初期化
     I2C_init();         // I2Cの初期化
     Joy_init();         // JoyStickの初期化
+    Sound_init();       // サウンドの初期化
     Timer_init(10000);  // タイマーの初期化(10000us = 10ms)
 
     // グラフィックスの初期化
@@ -27,6 +29,9 @@ void setup() {
 
     // キャンバスの作成
     canvas.createSprite(gfx.width(), gfx.height());
+
+    // プリセット音 再生
+    Sound_play(0);
 }
 
 void loop() {
@@ -42,6 +47,7 @@ void loop() {
 
     // 左上のボタンが押された場合は左上LEDを点灯する
     if (Joy_isPressed(BUTTON_TRIG_L)) {
+        Sound_beep(1000, 100);
         LED_setColor(0, 255, 255, 255);
     } else {
         LED_setColor(0, 0, 0, 0);
@@ -49,6 +55,7 @@ void loop() {
 
     // 右上のボタンが押された場合は右上LEDを点灯する
     if (Joy_isPressed(BUTTON_TRIG_R)) {
+        Sound_beep(1000, 100);
         LED_setColor(1, 255, 255, 255);
     } else {
         LED_setColor(1, 0, 0, 0);
@@ -82,9 +89,9 @@ void loop() {
     canvas.fillCircle(map(x2, 0, 4095, 0, W - 1), map(y2, 0, 4095, 0, H - 1), 5,
                       TFT_BLUE);
 
-    // フルカラーLEDの状態を更新する
-    LED_update();
+    LED_update();    // フルカラーLEDの更新
     Timer_update();  // タイマーの更新
+    Sound_update();  // サウンドの更新
 
     // キャンバスの描画(ちらつき防止)
     gfx.startWrite();
