@@ -1,94 +1,62 @@
-// はじめの九歩
-// I2C(Wire)でJoyStick基板と通信してみる
-// I2Cを使うことで、JoyStick基板のボタン状態やスティック状態を取得することができる
+// はじめの十歩
+// I2CとLEDの制御をドライバーとして別ファイルにしてみる
 
 #include <Arduino.h>
-#include <Wire.h>  // I2C を使う場合は Wire ライブラリを使う
-
-// フルカラーLEDを使うためのライブラリ
-#include <FastLED.h>
 
 // M5Stack用のグラフィックスライブラリ(https://github.com/m5stack/M5GFX)
 #include <M5GFX.h>
 
-// Atom JoyStickのLED(G6)
-#define PIN_LED_JOYSTICK 6
-
-// Atom JoyStickのLEDの数
-#define NUM_LEDS_JOYSTICK 2
-
-// フルカラーLEDの設定
-CRGB leds_joystick[NUM_LEDS_JOYSTICK];
-
 // M5Stack用のグラフィックスライブラリ
 M5GFX gfx;
+
+// I2Cドライバ(別ファイルに分離)
+#include "driver_i2c.h"
+
+// LEDドライバ(別ファイルに分離)
+#include "driver_led.h"
 
 void setup() {
     // S3 は Serial ではなく USBSerial を使う必要がある（罠）
     USBSerial.begin(115200);
 
+    // フルカラーLEDの初期化
+    LED_init();
+
+    // I2Cの初期化
+    I2C_init();
+
     // グラフィックスの初期化
     gfx.begin();
-
-    // フルカラーLEDの初期化
-    FastLED.addLeds<WS2812B, PIN_LED_JOYSTICK, GRB>(leds_joystick,
-                                                    NUM_LEDS_JOYSTICK);
-
-    // フルカラーLEDの明るさを設定する
-    FastLED.setBrightness(32);
-
-    gfx.clear();
-    gfx.setCursor(0, 0);
-    gfx.println("Press L/R Button");
-
-    Wire.begin();
 }
 
-// Atom JoyStickのI2Cアドレス
-#define I2C_ADDR_ATOM_JOYSTICK 0x59
-
-// Atom JoyStickのボタン状態取得レジスタ
-//   0x70 〜 0x73 までのレジスタにボタン状態が格納されている
-#define I2C_BUTTON_REG 0x70
-
 void loop() {
+    gfx.clear();
+
     uint8_t data[4] = {0};
 
     // I2CでAtom JoyStickのボタン状態を取得する
-    {
-        // ボタン状態取得レジスタにアクセスする
-        Wire.beginTransmission(I2C_ADDR_ATOM_JOYSTICK);
-        Wire.write(I2C_BUTTON_REG);
-        Wire.endTransmission(false);
-        // ボタン状態を取得する
-        Wire.requestFrom(I2C_ADDR_ATOM_JOYSTICK, 4);
-        // 4バイト読み込む
-        for (int i = 0; i < 4; i++) {
-            data[i] = Wire.read();
-        }
-        Wire.endTransmission();
-    }
-
-    // data[0] が左上のボタンの状態(LOW: 押されている)
-    // data[1] が右上のボタンの状態(LOW: 押されている)
+    I2C_read(I2C_ADDR_ATOM_JOYSTICK, I2C_BUTTON_REG, data, sizeof(data));
 
     // 左上のボタンが押された場合は左上LEDを点灯する
     if (data[0] == LOW) {
         // 押されている
-        leds_joystick[0] = CRGB::White;
+        LED_setColor(0, 255, 255, 255);
     } else {
         // 押されていない
-        leds_joystick[0] = CRGB::Black;
+        LED_setColor(0, 0, 0, 0);
     }
 
     // 右上のボタンが押された場合は右上LEDを点灯する
     if (data[1] == LOW) {
-        leds_joystick[1] = CRGB::White;
+        LED_setColor(1, 255, 255, 255);
     } else {
-        leds_joystick[1] = CRGB::Black;
+        LED_setColor(1, 0, 0, 0);
     }
+
     // フルカラーLEDの状態を更新する
-    FastLED.show();
+    LED_update();
+    gfx.setCursor(0, 0);
+    gfx.printf("Button: %d %d %d %d", data[0], data[1], data[2], data[3]);
 
     delay(10);
 }
