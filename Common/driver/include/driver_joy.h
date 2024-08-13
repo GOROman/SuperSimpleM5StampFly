@@ -1,5 +1,6 @@
 #pragma once
 
+#include "driver_i2c.h"
 #include "hardware_config.h"
 
 enum {

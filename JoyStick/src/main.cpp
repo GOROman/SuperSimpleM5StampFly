@@ -1,5 +1,5 @@
-// はじめの十七歩
-// ボタン入力ドライバーを追加
+// はじめの十八歩
+// バッテリードライバーを追加。I2Cでバッテリー電圧を取得する。
 
 #include <Arduino.h>
 #include <M5GFX.h>
@@ -9,19 +9,20 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 
-M5GFX    gfx;
-M5Canvas canvas(&gfx);  // キャンバス
-
 #define BLE_CENTRAL 1
 
 // ../Common/Driver/include/...
-#include "driver_ble.h"     // BLEドライバ
-#include "driver_button.h"  // ボタンドライバ
-#include "driver_i2c.h"     // I2Cドライバ
-#include "driver_joy.h"     // JoyStickドライバ
-#include "driver_led.h"     // LEDドライバ
-#include "driver_sound.h"   // サウンドドライバ
-#include "driver_timer.h"   // Timerドライバ
+#include "driver_battery.h"  // バッテリドライバ
+#include "driver_ble.h"      // BLEドライバ
+#include "driver_button.h"   // ボタンドライバ
+#include "driver_i2c.h"      // I2Cドライバ
+#include "driver_joy.h"      // JoyStickドライバ
+#include "driver_led.h"      // LEDドライバ
+#include "driver_sound.h"    // サウンドドライバ
+#include "driver_timer.h"    // Timerドライバ
+
+M5GFX    gfx;
+M5Canvas canvas(&gfx);  // キャンバス
 
 void setup() {
     USBSerial.begin(115200);
@@ -32,6 +33,7 @@ void setup() {
     Joy_init();         // JoyStickの初期化
     Sound_init();       // サウンドの初期化
     Button_init();      // ボタンの初期化
+    Battery_init();     // バッテリの初期化
     Timer_init(16667);  // タイマーの初期化(16667us = 16ms)
 
     // グラフィックスの初期化
@@ -41,16 +43,15 @@ void setup() {
     canvas.createSprite(gfx.width(), gfx.height());
 
     delay(100);
-    uint8_t fw_ver =
-        Joy_getFirmwareVersion();  // ファームウェアバージョンの取得
+    Sound_play(SOUND_PRESET_BOOT);
 
     gfx.setCursor(0, 10);
     gfx.setFont(&fonts::Font2);
-    // プリセット音 再生
-    Sound_play(SOUND_PRESET_BOOT);
-
     gfx.printf("Atom JoyStick\n");
     delay(500);
+
+    // ファームウェアバージョンの取得と表示
+    uint8_t fw_ver = Joy_getFirmwareVersion();
     gfx.printf("Firmware ver.% d\n\n ", fw_ver);
     gfx.setTextSize(2, 2);
     delay(500);
@@ -93,6 +94,9 @@ void loop() {
     // JoyStickの状態を更新する(I2C受信)
     Joy_update();
 
+    // バッテリの状態を更新する
+    Battery_update();
+
     // 左上のボタンが押された場合は左上LEDを点灯する
     if (Joy_isPressed(BUTTON_TRIG_L)) {
         Sound_beep(1000, 100);
@@ -114,9 +118,10 @@ void loop() {
 
     canvas.clear();
     canvas.setCursor(0, 0);
-    canvas.printf("Button: %d %d %d %d", Joy_isPressed(BUTTON_TRIG_L),
-                  Joy_isPressed(BUTTON_TRIG_R), Joy_isPressed(BUTTON_STICK_L),
-                  Joy_isPressed(BUTTON_STICK_R));
+    canvas.printf("Button: %d%d%d%d\nBat1:%4.2fV Bat2:%4.2fV ",
+                  Joy_isPressed(BUTTON_TRIG_L), Joy_isPressed(BUTTON_TRIG_R),
+                  Joy_isPressed(BUTTON_STICK_L), Joy_isPressed(BUTTON_STICK_R),
+                  Battery_getVoltage(0), Battery_getVoltage(1));
 
     canvas.drawFastHLine(0, H / 2, W, TFT_WHITE);
     canvas.drawFastVLine(W / 2, 0, H, TFT_WHITE);

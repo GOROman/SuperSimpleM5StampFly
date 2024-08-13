@@ -23,6 +23,7 @@
 // Atom JoyStickのレジスタ
 #define I2C_REG_JOY1_ADC_VALUE_12BITS 0x00
 #define I2C_REG_JOY2_ADC_VALUE_12BITS 0x20
+#define I2C_REG_BATTERY_VOLTAGE       0x60
 #define I2C_REG_BUTTON                0x70
 #define I2C_REG_FIRMWARE_VERSION      0xFE
 
