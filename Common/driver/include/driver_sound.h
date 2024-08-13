@@ -1,11 +1,11 @@
 #pragma once
 // サウンドドライバ
 
-#define PWM_CH   4            // PWMチャンネル (0-3 は使用中)
-#define PWM_FREQ 4000         // 4kHz
-#define PWM_RESO 8            // 8bit
+#define PWM_CH   4     // PWMチャンネル (0-3 は使用中)
+#define PWM_FREQ 4000  // 4kHz
+#define PWM_RESO 8     // 8bit
 
-enum { 
+enum {
     SOUND_PRESET_BOOT,
     SOUND_PRESET_CONNECTED,
     SOUND_PRESET_DISCONNECTED,
@@ -74,7 +74,9 @@ void Sound_play(uint8_t index) {
         {4000, 300}, {2000, 100}, {1000, 200}, {500, 100}, {-1, -1},
     };
     static SoundParams_t preset3[] = {
-        {400, 400}, {200, 800}, {-1, -1},
+        {400, 400},
+        {200, 800},
+        {-1, -1},
     };
     static SoundParams_t* presets[] = {
         preset1,
@@ -82,7 +84,7 @@ void Sound_play(uint8_t index) {
         preset3,
     };
 
-    if (index < SOUND_PRESET_MAX ) {        
+    if (index < SOUND_PRESET_MAX) {
         // サウンドタスクを作成
         _create_sound_task(presets[index]);
     }

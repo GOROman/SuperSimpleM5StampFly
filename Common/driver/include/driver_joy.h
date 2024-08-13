@@ -35,9 +35,7 @@ typedef struct {
 JoyData_t joyData;
 
 // JoyStickの初期化
-void Joy_init() {
-    memset(&joyData, 0, sizeof(joyData)); 
-}
+void Joy_init() { memset(&joyData, 0, sizeof(joyData)); }
 
 // JoyStickの状態を更新する(I2C受信)
 void Joy_update() {
@@ -52,7 +50,8 @@ void Joy_update() {
 // JoyStickのファームウェアバージョンを取得する
 uint8_t Joy_getFirmwareVersion() {
     uint8_t ver;
-    I2C_read(I2C_ADDR_ATOM_JOYSTICK, I2C_REG_FIRMWARE_VERSION, &ver, sizeof(ver));
+    I2C_read(I2C_ADDR_ATOM_JOYSTICK, I2C_REG_FIRMWARE_VERSION, &ver,
+             sizeof(ver));
     return ver;
 }
 

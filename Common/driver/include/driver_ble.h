@@ -11,7 +11,7 @@ enum BLE_EVENT {
 // イベントパラメータ
 typedef struct {
     BLE_EVENT event;
-    uint32_t   data;    // 仮
+    uint32_t  data;  // 仮
 } BLEEventParam_t;
 
 // イベントコールバック関数
@@ -23,15 +23,14 @@ static BLECallback_t _ble_callback;
 
 static TaskHandle_t _bleTaskHandle = NULL;  // タスクハンドル
 
-static BLEClient* pClient = NULL;
-static BLEAdvertisedDevice* targetDevice = NULL;
+static BLEClient*               pClient = NULL;
+static BLEAdvertisedDevice*     targetDevice = NULL;
 static BLERemoteCharacteristic* pRemoteCharacteristic = NULL;
 
-
-class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     void onResult(BLEAdvertisedDevice advertisedDevice) override {
         USBSerial.println(advertisedDevice.toString().c_str());
-//        USBSerial.println(advertisedDevice.getName().c_str());
+        //        USBSerial.println(advertisedDevice.getName().c_str());
 
         if (advertisedDevice.getName() == BLE_DEVICE_NAME) {
             USBSerial.println(advertisedDevice.getAddress().toString().c_str());
@@ -40,7 +39,6 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
         }
     }
 };
-
 
 void _BLE_Scan_Task(void* params) {
     USBSerial.println("BLE: Scan...");
@@ -65,9 +63,8 @@ void BLE_init() {
 }
 
 // BLE接続開始
-void BLE_connect()
-{
-    if ( _bleTaskHandle == NULL ) {
+void BLE_connect() {
+    if (_bleTaskHandle == NULL) {
         xTaskCreatePinnedToCore(_BLE_Scan_Task, "BLE Scan Task", 2048, NULL, 1,
                                 &_bleTaskHandle, 1);
     }
@@ -92,7 +89,6 @@ void BLE_update(int value) {
         // キャラクタリスティックにデータを書き込む
         pRemoteCharacteristic->writeValue((uint8_t*)&value, sizeof(value));
     }
-
 }
 
 // BLE接続中か？
@@ -105,19 +101,19 @@ bool BLE_isConnected() {
 
 #if BLE_PERIPHERAL
 
-
-BLEServer* pServer = NULL;
+BLEServer*         pServer = NULL;
 BLECharacteristic* pCharacteristic = NULL;
-bool deviceConnected = false;
-bool advertising = false;
+bool               deviceConnected = false;
+bool               advertising = false;
 
-class BLECallbacks: public BLEServerCallbacks, public BLECharacteristicCallbacks {
+class BLECallbacks : public BLEServerCallbacks,
+                     public BLECharacteristicCallbacks {
     void onConnect(BLEServer* pServer) override {
         deviceConnected = true;
         {
             BLEEventParam_t param;
-            param.event = BLE_EVENT_CONNECTED;        
-            _ble_callback( &param );
+            param.event = BLE_EVENT_CONNECTED;
+            _ble_callback(&param);
         }
     }
 
@@ -126,72 +122,63 @@ class BLECallbacks: public BLEServerCallbacks, public BLECharacteristicCallbacks
         advertising = false;
         {
             BLEEventParam_t param;
-            param.event = BLE_EVENT_DISCONNECTED;        
-            _ble_callback( &param );
+            param.event = BLE_EVENT_DISCONNECTED;
+            _ble_callback(&param);
         }
-
     }
 
-    void onRead(BLECharacteristic *pCharacteristic) override {
-    }
+    void onRead(BLECharacteristic* pCharacteristic) override {}
 
-    void onWrite(BLECharacteristic *pCharacteristic) override {
+    void onWrite(BLECharacteristic* pCharacteristic) override {
         std::string value = pCharacteristic->getValue();
         if (value.length() == 4) {
             uint32_t number = (static_cast<uint8_t>(value[3]) << 24) |
                               (static_cast<uint8_t>(value[2]) << 16) |
                               (static_cast<uint8_t>(value[1]) << 8) |
                               (static_cast<uint8_t>(value[0]));
-            
+
             {
                 BLEEventParam_t param;
-                param.event = BLE_EVENT_RECEIVED;        
+                param.event = BLE_EVENT_RECEIVED;
                 param.data = number;
-                _ble_callback( &param );
+                _ble_callback(&param);
             }
 
             USBSerial.println(number);
         } else {
             USBSerial.println("...");
-        } 
-   }
+        }
+    }
 };
 
 BLECallbacks bleCallbacks;
-
 
 void BLE_init(BLECallback_t callback) {
     _ble_callback = callback;
     USBSerial.println("BLE_PERIPHERAL");
     BLEDevice::init(BLE_DEVICE_NAME);
 
+    // Create BLE Server
+    pServer = BLEDevice::createServer();
+    pServer->setCallbacks(&bleCallbacks);
 
-        // Create BLE Server
-        pServer = BLEDevice::createServer();
-        pServer->setCallbacks(&bleCallbacks);
+    // Create BLE Service
+    BLEService* pService = pServer->createService("0000");
 
-        // Create BLE Service
-        BLEService* pService = pServer->createService("0000");
+    // Create BLE Characteristic
+    pCharacteristic = pService->createCharacteristic(
+        "0001", BLECharacteristic::PROPERTY_READ |
+                    BLECharacteristic::PROPERTY_WRITE |
+                    BLECharacteristic::PROPERTY_NOTIFY |
+                    BLECharacteristic::PROPERTY_INDICATE);
 
-        // Create BLE Characteristic
-        pCharacteristic = pService->createCharacteristic(
-            "0001",
-            BLECharacteristic::PROPERTY_READ |
-            BLECharacteristic::PROPERTY_WRITE |
-            BLECharacteristic::PROPERTY_NOTIFY |
-            BLECharacteristic::PROPERTY_INDICATE
-        );
+    pCharacteristic->setCallbacks(&bleCallbacks);
 
-        pCharacteristic->setCallbacks(&bleCallbacks);
-
-        // Start the service
-        pService->start();
-        USBSerial.println("pService->start()");
-
+    // Start the service
+    pService->start();
+    USBSerial.println("pService->start()");
 }
-void BLE_connect()
-{
-}
+void BLE_connect() {}
 
 void BLE_send(uint8_t* data, uint8_t len) {
     if (pCharacteristic) {
@@ -201,7 +188,7 @@ void BLE_send(uint8_t* data, uint8_t len) {
 }
 
 void BLE_update() {
-    if( deviceConnected == false ) {
+    if (deviceConnected == false) {
         if (advertising == false) {
             // Start advertising
             advertising = true;
@@ -211,7 +198,6 @@ void BLE_update() {
             USBSerial.println("pAdvertising->start()");
         }
     }
-
 }
 
 #endif
