@@ -1,5 +1,5 @@
-// はじめの十四歩
-// ドライバーをStampFlyとJoyStickで共通化(Common/Driver)
+// はじめの十五歩
+// Atom JoyStickの内蔵ファームウェアバージョンをI2Cで読み出してみる
 
 #include <Arduino.h>
 #include <M5GFX.h>
@@ -30,8 +30,20 @@ void setup() {
     // キャンバスの作成
     canvas.createSprite(gfx.width(), gfx.height());
 
+    delay(100);
+    uint8_t fw_ver =
+        Joy_getFirmwareVersion();  // ファームウェアバージョンの取得
+
     // プリセット音 再生
     Sound_play(0);
+    gfx.setCursor(0, 10);
+    gfx.setFont(&fonts::Font2);
+    gfx.printf("Atom JoyStick\nFirmware ver.%d\n\n", fw_ver);
+    gfx.setCursor(48, 48);
+    gfx.setTextSize(4, 4);
+    gfx.setTextColor(TFT_SKYBLUE);
+    gfx.printf("%c", fw_ver);
+    delay(1000);  // 1秒待つ
 }
 
 void loop() {
