@@ -8,11 +8,11 @@
 CRGB leds[NUM_LEDS];
 
 // フルカラーLEDの初期化
-void LED_init() {
+void LED_init(int brightness = 32) {
     FastLED.addLeds<WS2812B, PIN_LED, GRB>(leds, NUM_LEDS);
 
     // フルカラーLEDの明るさを設定する
-    FastLED.setBrightness(32);
+    FastLED.setBrightness(brightness);
 }
 
 // フルカラーLEDの状態を更新する

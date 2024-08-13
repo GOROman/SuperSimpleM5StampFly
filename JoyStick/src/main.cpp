@@ -1,5 +1,5 @@
-// はじめの十八歩
-// バッテリードライバーを追加。I2Cでバッテリー電圧を取得する。
+// はじめの十九歩
+// 処理負荷の計測を追加
 
 #include <Arduino.h>
 #include <M5GFX.h>
@@ -82,6 +82,8 @@ void setup() {
     Sound_play(SOUND_PRESET_CONNECTED);
 }
 
+int64_t elapsedTime = 0;
+
 void loop() {
     Timer_sync();  // フレーム同期
 
@@ -118,7 +120,8 @@ void loop() {
 
     canvas.clear();
     canvas.setCursor(0, 0);
-    canvas.printf("Button: %d%d%d%d\nBat1:%4.2fV Bat2:%4.2fV ",
+    canvas.printf("%06d %4.4fms\nButton: %d%d%d%d\nBat1:%4.2fV Bat2:%4.2fV ",
+                  Timer_getFrameCount(), (float)elapsedTime / 1000.0f,
                   Joy_isPressed(BUTTON_TRIG_L), Joy_isPressed(BUTTON_TRIG_R),
                   Joy_isPressed(BUTTON_STICK_L), Joy_isPressed(BUTTON_STICK_R),
                   Battery_getVoltage(0), Battery_getVoltage(1));
@@ -142,6 +145,11 @@ void loop() {
     canvas.fillCircle(map(x2, 0, 4095, 0, W - 1), map(y2, 0, 4095, 0, H - 1), 5,
                       TFT_BLUE);
 
+    // 画面を押した瞬間だけ音を鳴らすテスト
+    if (Button_wasPressed()) {
+        Sound_beep(4000, 50);
+    }
+
     // BLEの更新
     BLE_update(y1);  // y1 の値をテストで送信
 
@@ -153,4 +161,7 @@ void loop() {
     gfx.startWrite();
     canvas.pushSprite(0, 0);
     gfx.endWrite();
+
+    // 処理負荷計測
+    elapsedTime = Timer_getElapsedTime();
 }
