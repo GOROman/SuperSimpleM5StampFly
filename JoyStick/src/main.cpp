@@ -1,5 +1,5 @@
-// はじめの十六歩
-// BLEでネットワーク通信をしてモーターを連動させてみる
+// はじめの十七歩
+// ボタン入力ドライバーを追加
 
 #include <Arduino.h>
 #include <M5GFX.h>
@@ -15,12 +15,13 @@ M5Canvas canvas(&gfx);  // キャンバス
 #define BLE_CENTRAL 1
 
 // ../Common/Driver/include/...
-#include "driver_ble.h"    // BLEドライバ
-#include "driver_i2c.h"    // I2Cドライバ
-#include "driver_joy.h"    // JoyStickドライバ
-#include "driver_led.h"    // LEDドライバ
-#include "driver_sound.h"  // サウンドドライバ
-#include "driver_timer.h"  // Timerドライバ
+#include "driver_ble.h"     // BLEドライバ
+#include "driver_button.h"  // ボタンドライバ
+#include "driver_i2c.h"     // I2Cドライバ
+#include "driver_joy.h"     // JoyStickドライバ
+#include "driver_led.h"     // LEDドライバ
+#include "driver_sound.h"   // サウンドドライバ
+#include "driver_timer.h"   // Timerドライバ
 
 void setup() {
     USBSerial.begin(115200);
@@ -30,6 +31,7 @@ void setup() {
     I2C_init();         // I2Cの初期化
     Joy_init();         // JoyStickの初期化
     Sound_init();       // サウンドの初期化
+    Button_init();      // ボタンの初期化
     Timer_init(16667);  // タイマーの初期化(16667us = 16ms)
 
     // グラフィックスの初期化
@@ -67,6 +69,12 @@ void setup() {
         gfx.setCursor(4, 48);
         gfx.printf("BLE Scan");
         delay(100);
+
+        // ボタン押下で強制スキャン終了
+        Button_update();
+        if (Button_isPressed()) {
+            break;
+        }
     } while (!BLE_isConnected());
 
     // 接続したら音を鳴らす
@@ -76,10 +84,11 @@ void setup() {
 void loop() {
     Timer_sync();  // フレーム同期
 
-    canvas.fillScreen(0);
-
     // I2C通信の更新
     I2C_update();
+
+    // ボタンの状態を更新する
+    Button_update();
 
     // JoyStickの状態を更新する(I2C受信)
     Joy_update();

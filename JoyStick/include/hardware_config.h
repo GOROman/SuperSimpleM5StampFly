@@ -12,6 +12,10 @@
 #define PIN_LED  6  // Atom JoyStickのLED(G6)
 #define NUM_LEDS 2  // Atom JoyStickのLEDの数
 
+// ボタン関連 ----------------------------------
+#define PIN_BUTTON  41  // Atom S3のボタン(G41)
+#define NUM_BUTTONS 1   // Atom S3のボタンの数
+
 // JoyStick関連 --------------------------------
 // Atom JoyStickのI2Cアドレス
 #define I2C_ADDR_ATOM_JOYSTICK 0x59
