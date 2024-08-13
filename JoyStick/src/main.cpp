@@ -1,5 +1,5 @@
-// はじめの十九歩
-// 処理負荷の計測を追加
+// はじめの二十歩
+// ジョイスティックに押された瞬間(wasPressed)と離された瞬間(wasReleased)を取る処理を追加
 
 #include <Arduino.h>
 #include <M5GFX.h>
@@ -100,7 +100,7 @@ void loop() {
     Battery_update();
 
     // 左上のボタンが押された場合は左上LEDを点灯する
-    if (Joy_isPressed(BUTTON_TRIG_L)) {
+    if (Joy_wasPressed(BUTTON_TRIG_L)) {
         Sound_beep(1000, 100);
         LED_setColor(0, 255, 255, 255);
     } else {
@@ -108,7 +108,7 @@ void loop() {
     }
 
     // 右上のボタンが押された場合は右上LEDを点灯する
-    if (Joy_isPressed(BUTTON_TRIG_R)) {
+    if (Joy_wasPressed(BUTTON_TRIG_R)) {
         Sound_beep(1000, 100);
         LED_setColor(1, 255, 255, 255);
     } else {

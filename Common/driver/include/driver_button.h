@@ -5,8 +5,6 @@
 
 static bool _Button_lastState = false;
 static bool _Button_isPressed = false;
-static bool _Button_wasPressed = false;
-static bool _Button_wasReleased = false;
 
 // ボタン初期化
 void Button_init() { pinMode(PIN_BUTTON, INPUT); }
@@ -15,8 +13,6 @@ void Button_init() { pinMode(PIN_BUTTON, INPUT); }
 void Button_update() {
     _Button_lastState = _Button_isPressed;
     _Button_isPressed = !digitalRead(PIN_BUTTON);
-    _Button_wasPressed = _Button_isPressed && !_Button_lastState;
-    _Button_wasReleased = !_Button_isPressed && _Button_lastState;
 }
 
 // ボタン押下判定
@@ -34,7 +30,7 @@ bool Button_wasPressed(uint8_t index = 0) {
         return false;
     }
 
-    return _Button_wasPressed;
+    return _Button_isPressed && !_Button_lastState;
 }
 
 // ボタン押下判定(離した時のみ)
@@ -43,5 +39,5 @@ bool Button_wasReleased(uint8_t index = 0) {
         return false;
     }
 
-    return _Button_wasReleased;
+    return !_Button_isPressed && _Button_lastState;
 }
