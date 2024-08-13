@@ -1,13 +1,21 @@
-// はじめの十五歩
-// Atom JoyStickの内蔵ファームウェアバージョンをI2Cで読み出してみる
+// はじめの十六歩
+// BLEでネットワーク通信をしてモーターを連動させてみる
 
 #include <Arduino.h>
 #include <M5GFX.h>
 
+// BLEライブラリ
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+
 M5GFX    gfx;
 M5Canvas canvas(&gfx);  // キャンバス
 
+#define BLE_CENTRAL 1
+
 // ../Common/Driver/include/...
+#include "driver_ble.h"    // BLEドライバ
 #include "driver_i2c.h"    // I2Cドライバ
 #include "driver_joy.h"    // JoyStickドライバ
 #include "driver_led.h"    // LEDドライバ
@@ -22,7 +30,7 @@ void setup() {
     I2C_init();         // I2Cの初期化
     Joy_init();         // JoyStickの初期化
     Sound_init();       // サウンドの初期化
-    Timer_init(10000);  // タイマーの初期化(10000us = 10ms)
+    Timer_init(16667);  // タイマーの初期化(16667us = 16ms)
 
     // グラフィックスの初期化
     gfx.begin();
@@ -34,16 +42,35 @@ void setup() {
     uint8_t fw_ver =
         Joy_getFirmwareVersion();  // ファームウェアバージョンの取得
 
-    // プリセット音 再生
-    Sound_play(0);
     gfx.setCursor(0, 10);
     gfx.setFont(&fonts::Font2);
-    gfx.printf("Atom JoyStick\nFirmware ver.%d\n\n", fw_ver);
-    gfx.setCursor(48, 48);
-    gfx.setTextSize(4, 4);
-    gfx.setTextColor(TFT_SKYBLUE);
-    gfx.printf("%c", fw_ver);
-    delay(1000);  // 1秒待つ
+    // プリセット音 再生
+    Sound_play(SOUND_PRESET_BOOT);
+
+    gfx.printf("Atom JoyStick\n");
+    delay(500);
+    gfx.printf("Firmware ver.% d\n\n ", fw_ver);
+    gfx.setTextSize(2, 2);
+    delay(500);
+
+    BLE_init();  // BLEの初期化
+
+    BLE_connect();  // BLE接続
+
+    do {
+        gfx.setTextColor(TFT_BLUE);
+        gfx.setCursor(4, 48);
+        gfx.printf("BLE Scan");
+        delay(200);
+
+        gfx.setTextColor(TFT_WHITE);
+        gfx.setCursor(4, 48);
+        gfx.printf("BLE Scan");
+        delay(100);
+    } while (!BLE_isConnected());
+
+    // 接続したら音を鳴らす
+    Sound_play(SOUND_PRESET_CONNECTED);
 }
 
 void loop() {
@@ -100,6 +127,9 @@ void loop() {
                       TFT_RED);
     canvas.fillCircle(map(x2, 0, 4095, 0, W - 1), map(y2, 0, 4095, 0, H - 1), 5,
                       TFT_BLUE);
+
+    // BLEの更新
+    BLE_update(y1);  // y1 の値をテストで送信
 
     LED_update();    // フルカラーLEDの更新
     Timer_update();  // タイマーの更新
