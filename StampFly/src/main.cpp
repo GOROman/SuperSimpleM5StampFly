@@ -77,11 +77,11 @@ void loop() {
             int w = pow * 255;
             LED_setColor(0, w, w, w);
 
-            // モーターをちょっと回してみる（0.1f = 10%）
-            Motor_setSpeed(0, pow * 0.1f);
-            Motor_setSpeed(1, pow * 0.1f);
-            Motor_setSpeed(2, pow * 0.1f);
-            Motor_setSpeed(3, pow * 0.1f);
+            // モーターをちょっと回してみる
+            Motor_setSpeed(0, pow * 0.9f);
+            Motor_setSpeed(1, pow * 0.9f);
+            Motor_setSpeed(2, pow * 0.9f);
+            Motor_setSpeed(3, pow * 0.9f);
         } else {
             LED_setColor(0, 0, 0, 100);
 
