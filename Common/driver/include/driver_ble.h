@@ -1,4 +1,5 @@
 #pragma once
+
 #define BLE_DEVICE_NAME "STAMPFLY"
 
 // イベント種別
@@ -8,10 +9,20 @@ enum BLE_EVENT {
     BLE_EVENT_RECEIVED,
 };
 
+// 通信データ
+typedef struct {
+    uint16_t x1;
+    uint16_t y1;
+    uint16_t x2;
+    uint16_t y2;
+    uint8_t  button;
+    uint8_t  pad0;
+} CommData_t;
+
 // イベントパラメータ
 typedef struct {
-    BLE_EVENT event;
-    uint32_t  data;  // 仮
+    BLE_EVENT  event;
+    CommData_t data;  // 仮
 } BLEEventParam_t;
 
 // イベントコールバック関数
@@ -28,14 +39,15 @@ static BLEAdvertisedDevice*     targetDevice = NULL;
 static BLERemoteCharacteristic* pRemoteCharacteristic = NULL;
 
 class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
-    void onResult(BLEAdvertisedDevice advertisedDevice) override {
-        USBSerial.println(advertisedDevice.toString().c_str());
+    void onResult(BLEAdvertisedDevice* advertisedDevice) override {
+        USBSerial.println(advertisedDevice->toString().c_str());
         //        USBSerial.println(advertisedDevice.getName().c_str());
 
-        if (advertisedDevice.getName() == BLE_DEVICE_NAME) {
-            USBSerial.println(advertisedDevice.getAddress().toString().c_str());
-            advertisedDevice.getScan()->stop();
-            targetDevice = new BLEAdvertisedDevice(advertisedDevice);
+        if (advertisedDevice->getName() == BLE_DEVICE_NAME) {
+            USBSerial.println(
+                advertisedDevice->getAddress().toString().c_str());
+            advertisedDevice->getScan()->stop();
+            targetDevice = new BLEAdvertisedDevice(*advertisedDevice);
         }
     }
 };
@@ -83,11 +95,11 @@ static void _BLE_check() {
 }
 
 // BLE更新
-void BLE_update(int value) {
+void BLE_update(CommData_t* data) {
     _BLE_check();
     if (pRemoteCharacteristic) {
         // キャラクタリスティックにデータを書き込む
-        pRemoteCharacteristic->writeValue((uint8_t*)&value, sizeof(value));
+        pRemoteCharacteristic->writeValue((uint8_t*)data, sizeof(CommData_t));
     }
 }
 
@@ -131,26 +143,28 @@ class BLECallbacks : public BLEServerCallbacks,
 
     void onWrite(BLECharacteristic* pCharacteristic) override {
         std::string value = pCharacteristic->getValue();
-        if (value.length() == 4) {
-            uint32_t number = (static_cast<uint8_t>(value[3]) << 24) |
-                              (static_cast<uint8_t>(value[2]) << 16) |
-                              (static_cast<uint8_t>(value[1]) << 8) |
-                              (static_cast<uint8_t>(value[0]));
-
+        if (value.length() == sizeof(CommData_t)) {
+            /*
+            std::string    value = pCharacteristic->getValue();
+                uint32_t number = (static_cast<uint8_t>(value[3]) << 24) |
+                                  (static_cast<uint8_t>(value[2]) << 16) |
+                                  (static_cast<uint8_t>(value[1]) << 8) |
+                                  (static_cast<uint8_t>(value[0]));
+    */
             {
                 BLEEventParam_t param;
                 param.event = BLE_EVENT_RECEIVED;
-                param.data = number;
+                uint8_t* p = (uint8_t*)value.data();
+                memcpy(&param.data, p, sizeof(CommData_t));
                 _ble_callback(&param);
-            }
 
-            USBSerial.println(number);
+                //                USBSerial.println(param.data.y1);
+            }
         } else {
             USBSerial.println("...");
         }
     }
 };
-
 BLECallbacks bleCallbacks;
 
 void BLE_init(BLECallback_t callback) {
@@ -167,10 +181,8 @@ void BLE_init(BLECallback_t callback) {
 
     // Create BLE Characteristic
     pCharacteristic = pService->createCharacteristic(
-        "0001", BLECharacteristic::PROPERTY_READ |
-                    BLECharacteristic::PROPERTY_WRITE |
-                    BLECharacteristic::PROPERTY_NOTIFY |
-                    BLECharacteristic::PROPERTY_INDICATE);
+        "0001", NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE |
+                    NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::INDICATE);
 
     pCharacteristic->setCallbacks(&bleCallbacks);
 

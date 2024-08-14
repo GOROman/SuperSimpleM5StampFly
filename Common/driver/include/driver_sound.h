@@ -90,7 +90,7 @@ void Sound_play(uint8_t index) {
     }
 }
 
-void Sound_beep(uint16_t freq, uint32_t duration) {
+void Sound_beep(int16_t freq, int16_t duration) {
     static SoundParams_t paramsArray[] = {
         {freq, duration},
         {-1, -1},

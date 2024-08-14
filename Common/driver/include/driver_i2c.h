@@ -13,7 +13,7 @@ void I2C_init() {
 void I2C_update() {}
 
 // I2Cでデータを読み込む
-void I2C_read(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len) {
+void I2C_read(uint8_t addr, uint8_t reg, uint8_t* data, uint8_t len) {
     // I2Cでデータを読み込む
     Wire.beginTransmission(addr);
     // レジスタを指定

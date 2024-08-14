@@ -1,11 +1,10 @@
-// はじめの十六歩
-// BLEでネットワーク通信をしてモーターを連動させてみる
+// はじめの二十一歩
+// BLEで受信したデータを使ってモーターを制御する
 
 #include <Arduino.h>
+
 // BLEライブラリ
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
+#include <NimBLEDevice.h>
 
 #define BLE_PERIPHERAL 1
 
@@ -20,7 +19,7 @@
 // フラグ
 static bool is_connected = false;
 // BLEデータ
-static uint32_t ble_data = -1;
+static CommData_t commdata;
 
 // BLEイベントコールバック
 static void _ble_event_callback(BLEEventParam_t* param) {
@@ -39,7 +38,7 @@ static void _ble_event_callback(BLEEventParam_t* param) {
             break;
         // データ受信時に呼ばれる
         case BLE_EVENT_RECEIVED:
-            ble_data = param->data;
+            memcpy(&commdata, &param->data, sizeof(CommData_t));
             break;
     }
 }
@@ -67,29 +66,52 @@ void loop() {
     I2C_update();  // I2C通信の更新
     BLE_update();  // BLE通信の更新
 
-    int y1 = ble_data;
+    int y1 = commdata.y1;
 
     if (is_connected) {
+        float pow = (2048 - y1) / 2048.0f;  // 0.0f ~ 1.0f
+        if (pow < 0.0f) {
+            pow = 0.0f;
+        }
+        // 0-4095 を -1 to +1
+        float x = commdata.x2 / 4095.0f * 2.0f - 1.0f;
+        float y = commdata.y2 / 4095.0f * 2.0f - 1.0f;
+
+        x *= 0.08f;
+        y *= 0.08f;
+
+        // モーターをちょっと回してみる（0.1f = 10%）
+        float fl = pow + x + y;
+        float fr = pow - x + y;
+        float rl = pow + x - y;
+        float rr = pow - x - y;
+        // 0 - 1 の範囲にクランプ
+        fl = constrain(fl, 0.0f, 1.0f);
+        fr = constrain(fr, 0.0f, 1.0f);
+        rl = constrain(rl, 0.0f, 1.0f);
+        rr = constrain(rr, 0.0f, 1.0f);
+
+        if (Timer_getFrameCount() % 5 == 0) {
+            USBSerial.printf("X:%4.2f Y:%4.2f - %+4.2f %+4.2f %+4.2f %+4.2f\n",
+                             x, y, fl, fr, rl, rr);
+        }
         // ジョイスティックのY値でモーターをオンオフする
         if ((y1 > 0) && (y1 < 1024)) {
-            float pow = (1024 - y1) / 1024.0f;  // 0.0f ~ 1.0f
-
             int w = pow * 255;
             LED_setColor(0, w, w, w);
 
-            // モーターをちょっと回してみる（0.1f = 10%）
-            Motor_setSpeed(0, pow * 0.1f);
-            Motor_setSpeed(1, pow * 0.1f);
-            Motor_setSpeed(2, pow * 0.1f);
-            Motor_setSpeed(3, pow * 0.1f);
+            Motor_setSpeed(MOTOR_FL, fl * 0.8f);
+            Motor_setSpeed(MOTOR_FR, fr * 0.8f);
+            Motor_setSpeed(MOTOR_RL, rl * 0.8f);
+            Motor_setSpeed(MOTOR_RR, rr * 0.8f);
         } else {
             LED_setColor(0, 0, 0, 100);
 
             // モーターを止める
-            Motor_setSpeed(0, 0);
-            Motor_setSpeed(1, 0);
-            Motor_setSpeed(2, 0);
-            Motor_setSpeed(3, 0);
+            Motor_setSpeed(MOTOR_FL, 0);
+            Motor_setSpeed(MOTOR_FR, 0);
+            Motor_setSpeed(MOTOR_RL, 0);
+            Motor_setSpeed(MOTOR_RR, 0);
         }
     } else {
         // BLE未接続時はLEDを点滅させる

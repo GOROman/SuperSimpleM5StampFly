@@ -1,13 +1,11 @@
-// はじめの二十歩
-// ジョイスティックに押された瞬間(wasPressed)と離された瞬間(wasReleased)を取る処理を追加
+// はじめの二十一歩
+// BLEライブラリをNimBLEに変更。BLEでジョイスティック情報を送信。
 
 #include <Arduino.h>
 #include <M5GFX.h>
 
 // BLEライブラリ
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
+#include <NimBLEDevice.h>
 
 #define BLE_CENTRAL 1
 
@@ -121,24 +119,36 @@ void loop() {
     const int W = gfx.width();
     const int H = gfx.height();
 
+    uint16_t x1, y1, x2, y2;
+    uint8_t  button;
+    Joy_getAxis(STICK_L, &x1, &y1);  // 12bit: 0-4095
+    Joy_getAxis(STICK_R, &x2, &y2);
+    button = (Joy_isPressed(BUTTON_TRIG_L) << 0) |
+             (Joy_isPressed(BUTTON_TRIG_R) << 1) |
+             (Joy_isPressed(BUTTON_STICK_L) << 2) |
+             (Joy_isPressed(BUTTON_STICK_R) << 3);
+
+    CommData_t commData;
+    memset(&commData, 0, sizeof(commData));
+    commData.x1 = x1;
+    commData.y1 = y1;
+    commData.x2 = x2;
+    commData.y2 = y2;
+    commData.button = button;
+
+    // BLEの更新
+    BLE_update(&commData);  // テストで送信
+
     canvas.clear();
     canvas.setCursor(0, 0);
-    canvas.printf("%06d %4.4fms\nButton: %d%d%d%d\nBat1:%4.2fV Bat2:%4.2fV ",
-                  Timer_getFrameCount(), (float)elapsedTime / 1000.0f,
-                  Joy_isPressed(BUTTON_TRIG_L), Joy_isPressed(BUTTON_TRIG_R),
-                  Joy_isPressed(BUTTON_STICK_L), Joy_isPressed(BUTTON_STICK_R),
+    canvas.printf("%06d %4.4fms\nButton: %02x\nBat1:%4.2fV Bat2:%4.2fV ",
+                  Timer_getFrameCount(), (float)elapsedTime / 1000.0f, button,
                   Battery_getVoltage(0), Battery_getVoltage(1));
 
     canvas.drawFastHLine(0, H / 2, W, TFT_WHITE);
     canvas.drawFastVLine(W / 2, 0, H, TFT_WHITE);
-
     // JoyStickの状態(X,Y)を表示する
     canvas.setCursor(0, 30);
-    uint16_t x1, y1, x2, y2;
-    Joy_getAxis(STICK_L, &x1, &y1);  // 12bit: 0-4095
-    Joy_getAxis(STICK_R, &x2, &y2);
-
-    // JoyStickの生データを表示する
     canvas.printf("Joy1: X:%4d Y:%4d\n", x1, y1);
     canvas.printf("Joy2: X:%4d Y:%4d\n", x2, y2);
 
@@ -152,9 +162,6 @@ void loop() {
     if (Button_wasPressed()) {
         Sound_beep(4000, 50);
     }
-
-    // BLEの更新
-    BLE_update(y1);  // y1 の値をテストで送信
 
     LED_update();    // フルカラーLEDの更新
     Timer_update();  // タイマーの更新

@@ -3,3 +3,5 @@ IndentWidth: 4
 AlignConsecutiveMacros: true
 AlignConsecutiveDeclarations: true
 AlignConsecutiveAssignments:true
+DerivePointerAlignment: false
+PointerAlignment: Left
