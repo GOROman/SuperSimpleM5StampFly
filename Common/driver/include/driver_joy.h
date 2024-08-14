@@ -37,8 +37,20 @@ typedef struct {
     bool lastButtonState[BUTTON_MAX];
 } JoyData_t;
 
+typedef struct {
+    struct {
+        int16_t x;
+        int16_t y;
+    } joy1;
+    struct {
+        int16_t x;
+        int16_t y;
+    } joy2;
+} JoyCalibrationData_t;
+
 // ジョイスティックのデータ
-static JoyData_t joyData;
+static JoyData_t            joyData;
+static JoyCalibrationData_t joyCalibrationData;
 
 // JoyStickの初期化
 void Joy_init() { memset(&joyData, 0, sizeof(joyData)); }
@@ -74,11 +86,11 @@ uint8_t Joy_getFirmwareVersion() {
 // JoyStickの状態(X,Y)を取得する
 void Joy_getAxis(uint8_t index, uint16_t* x, uint16_t* y) {
     if (index == 0) {
-        *x = joyData.joy1.x;
-        *y = joyData.joy1.y;
+        *x = constrain(joyData.joy1.x - joyCalibrationData.joy1.x, 0, 4095);
+        *y = constrain(joyData.joy1.y - joyCalibrationData.joy1.y, 0, 4095);
     } else {
-        *x = joyData.joy2.x;
-        *y = joyData.joy2.y;
+        *x = constrain(joyData.joy2.x - joyCalibrationData.joy2.x, 0, 4095);
+        *y = constrain(joyData.joy2.y - joyCalibrationData.joy2.y, 0, 4095);
     }
 }
 
@@ -104,4 +116,29 @@ bool Joy_wasReleased(uint8_t index) {
         return false;
     }
     return !joyData.buttonState[index] && joyData.lastButtonState[index];
+}
+
+// ジョイスティックのキャリブレーション
+bool Joy_calibrate() {
+    const int threshold = 300;
+
+    for (int i = 0; i < 100; i++) {
+        Joy_update();
+        joyCalibrationData.joy1.x = joyData.joy1.x - 2048;
+        joyCalibrationData.joy1.y = joyData.joy1.y - 2048;
+        joyCalibrationData.joy2.x = joyData.joy2.x - 2048;
+        joyCalibrationData.joy2.y = joyData.joy2.y - 2048;
+        USBSerial.printf("Joy Calib: X1:%4d Y1:%4d X2:%4d Y2:%4d\n",
+                         joyCalibrationData.joy1.x, joyCalibrationData.joy1.y,
+                         joyCalibrationData.joy2.x, joyCalibrationData.joy2.y);
+        if (abs(joyCalibrationData.joy1.x) < threshold &&
+            abs(joyCalibrationData.joy1.y) < threshold &&
+            abs(joyCalibrationData.joy2.x) < threshold &&
+            abs(joyCalibrationData.joy2.y) < threshold) {
+            return true;
+        }
+        delay(1);
+    }
+    // キャリブレーション失敗
+    return false;
 }

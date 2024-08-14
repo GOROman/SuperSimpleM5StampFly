@@ -36,6 +36,9 @@ void setup() {
     Battery_init();     // バッテリの初期化
     Timer_init(16667);  // タイマーの初期化(16667us = 16ms)
 
+    // キャリブレーション
+    Joy_calibrate();
+
     // グラフィックスの初期化
     gfx.begin();
 
